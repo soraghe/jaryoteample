@@ -248,21 +248,23 @@ void signalHandler(int signum) {
 			msgctl(msq_admin_id, IPC_RMID, NULL);
 			exit(0);
 		}
-		case SIGUSR1: {//클라이언트에 문제 발생 시 메시지큐 제거했다가 다시 생성
+		case SIGUSR1: {//클라이언트에 문제 발생 시 메시지큐 제거(복구 기능을 구현하고 싶은데, 아직 미구현임)
 			msgctl(msq_client_id, IPC_RMID, NULL);
-			msq_client_id = msgget(msq_key, IPC_CREAT | 0666);	
-			if(msq_client_id == -1) {
-				perror("msgget() error!(클라이언트 메시지큐 복구 실패) : ");
-				kill(getpid(), SIGUSR1);
-			}
+//			msq_client_id = msgget(msq_key, IPC_CREAT | 0666);	
+//			if(msq_client_id == -1) {
+//				perror("msgget() error!(클라이언트 메시지큐 복구 실패) : ");
+//				kill(getpid(), SIGUSR1);
+//			}
+			exit(1);
 		}
-		case SIGUSR2: {//관리자에 문제 발생 시 메시지큐 제거했다가 다시 생성
+		case SIGUSR2: {//관리자에 문제 발생 시 메시지큐 제거
 			msgctl(msq_admin_id, IPC_RMID, NULL);
-			msq_admin_id = msgget(msq_key, IPC_CREAT | 0666);
-			if(msq_admin_id == -1) {
-				perror("msgget() error!(관리자 메시지큐 복구 실패) : ");
-				kill(getpid(), SIGUSR2);
-			}
+//			msq_admin_id = msgget(msq_key, IPC_CREAT | 0666);
+//			if(msq_admin_id == -1) {
+//				perror("msgget() error!(관리자 메시지큐 복구 실패) : ");
+//				kill(getpid(), SIGUSR2);
+//			}
+			exit(2);
 		}
 	}
 }
