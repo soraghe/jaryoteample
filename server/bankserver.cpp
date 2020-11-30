@@ -17,10 +17,12 @@ using namespace std;
 
 void signalHandler(int signum);
 
-//메시지큐 생성과 동작에 필요한 key와 msq 지시자(메시지 혼선 원천 차단을 위해 관리자용과 클라이언트용을 분리 운용)
-key_t msq_key = 0;
-int msq_client_id = 0;//클라이언트용(=35)
-int msq_admin_id = 0;//관리자용(=31)
+//메시지큐 생성과 동작에 필요한 key와 msq 지시자
+key_t msq_key = 0;//(=31)
+
+//(메시지 큐를 관리자용과 클라이언트용으로 나누어 부모와 자식프로세스에서 각각 운용 -> 2개의 프로그램이나 다름없음)
+int msq_client_id = 0;//클라이언트용
+int msq_admin_id = 0;//관리자용
 
 int main(int argc, char const* argv[]) {
 
@@ -52,13 +54,15 @@ int main(int argc, char const* argv[]) {
 	if(pid > 0){
 
 		//메시지큐 생성
-		msq_client_id = msgget(msq_key, IPC_CREAT | 0777);
+		msq_client_id = msgget(msq_key, IPC_CREAT | 0666);
 		if(msq_client_id == -1) {
 			perror("msgget() error!(클라이언트 메시지큐 생성 실패) : ");
 			kill(getpid(), SIGUSR1);
 		}
 		cout<< "clientserver is working... "<< endl;
+
 		double money = 315400;//DB가 없어서 임시로 만든 잔액 저장 변수
+		
 		while(1) {
 			//client와 통신할 메시지 구조체 초기화
 			memset(&client, 0x00, sizeof(MsgClient));
@@ -84,7 +88,7 @@ int main(int argc, char const* argv[]) {
 								//(추후 DB파일에서 읽을 예정)
 						//ID/PW가 일치하면
 						if((strcmp(client.data.clientId, "hmschlng") == 0) && (strcmp(client.data.clientPw, "asdf1234!@") == 0)){			
-							//MsgClient구조체에 정보를 담아 메시지 송신
+							//MsgClient구조체에 정보(더미 데이터)를 담아 메시지 송신
 							client.mtype = MSG_TYPE_CLIENT;
 							strcpy(client.data.clientName, "이방환");
 							strcpy(client.data.clientResRegNum, "940430-1");
@@ -97,7 +101,7 @@ int main(int argc, char const* argv[]) {
 								kill(getpid(), SIGUSR1);
 							}
 						}
-						//일치하지 않으면 로그인 거부 메시지 송신
+						//ID/PW가 일치하지 않으면 로그인 거부 메시지 송신
 						else{
 							//(bool) MsgClient.is_error을 참으로 변경한 뒤 메시지 송신
 							client.is_error = true;
@@ -207,7 +211,7 @@ int main(int argc, char const* argv[]) {
 	//자식 프로세스(관리자와 통신)
 	if(pid == 0){	
 		//메시지큐 생성
-		msq_admin_id = msgget(msq_key, IPC_CREAT | 0777);
+		msq_admin_id = msgget(msq_key, IPC_CREAT | 0666);
 		if(msq_admin_id == -1) {
 			perror("msgget() error!(관리자 메시지큐 생성 실패) : ");
 			kill(getpid(), SIGUSR2);
@@ -239,21 +243,26 @@ int main(int argc, char const* argv[]) {
 
 void signalHandler(int signum) {
 	switch(signum){
-		case SIGINT: {//인터럽트 시그널 수신 시
+		case SIGINT: {//인터럽트 시그널 수신 시 모든 메시지큐 종료 후 프로그램 종료.
 			msgctl(msq_client_id, IPC_RMID, NULL);
 			msgctl(msq_admin_id, IPC_RMID, NULL);
 			exit(0);
 		}
-		case SIGUSR1: {//클라이언트에 문제 발생 시
+		case SIGUSR1: {//클라이언트에 문제 발생 시 메시지큐 제거했다가 다시 생성
 			msgctl(msq_client_id, IPC_RMID, NULL);
-			exit(1);
-			//일단 메시지큐 제거 후 종료 시그널로 만들었는데,
-			//서버 복구 관련한 방법이 있는 지 찾아본 뒤 다시 작업할 계획
+			msq_client_id = msgget(msq_key, IPC_CREAT | 0666);	
+			if(msq_client_id == -1) {
+				perror("msgget() error!(클라이언트 메시지큐 복구 실패) : ");
+				kill(getpid(), SIGUSR1);
+			}
 		}
-		case SIGUSR2: {//관리자에 문제 발생 시
+		case SIGUSR2: {//관리자에 문제 발생 시 메시지큐 제거했다가 다시 생성
 			msgctl(msq_admin_id, IPC_RMID, NULL);
-			exit(2);
-			//여기도 서버 복구 관련한 방법이 있는 지 찾아본 뒤 다시 작업할 계획
+			msq_admin_id = msgget(msq_key, IPC_CREAT | 0666);
+			if(msq_admin_id == -1) {
+				perror("msgget() error!(관리자 메시지큐 복구 실패) : ");
+				kill(getpid(), SIGUSR2);
+			}
 		}
 	}
 }

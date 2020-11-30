@@ -38,7 +38,7 @@ typedef struct __MsgAdmin {
 	char adminId[20];				//관리자 ID
 	char adminPw[20];				//관리자 PW
 	struct __ClientInfo data; 		//고객 정보(추후 변경 가능)
-	bool is_error;
+	bool is_error;					//에러 토큰(정보 제공 거부나 각종 에러 상황시에 쓰임)
 } MsgAdmin;
 
 
