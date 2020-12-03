@@ -47,20 +47,18 @@ typedef struct __MsgAdmin {
 	bool is_error;					//에러 토큰(정보 제공 거부나 각종 에러 상황시에 쓰임)
 } MsgAdmin;
 
-//클라이언트 작업코드
 enum ClientOffer {
 	CLSIGNIN = 1,	//로그인
 	CLSIGNUP,		//회원 가입
 	CLDEPOSIT,		//입금
 	CLWITHDRAW		//출금
 };
-
-//관리자 작업코드
 enum AdminOffer {
-	ADSIGNIN = 1,	//로그인
-	ADLOOKALLCLIENT,//클라이언트 전체 조회
-	ADMODIFYCLINFO,	//클라이언트 정보 수정
-	ADSIGNUP		//회원가입
+	ADSIGNIN = 11,
+	ADLOOKALLCLIENT,
+	ADMODIFYCLINFO,
+	ADSIGNUP,
+	ADSIGNOUT
 };
 
 #endif
