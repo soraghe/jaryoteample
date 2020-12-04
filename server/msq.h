@@ -23,6 +23,12 @@ typedef struct __ClientInfo {	//나중에 STL 사용을 위해 클래스로 변�
 	double clientBalance;			//고객 계좌잔액
 } ClientInfo;
 
+//관리자 정보 양식 
+typedef struct __AdminInfo{
+	char adminId[20];
+	char adminPw[20];
+} AdminInfo;
+
 //고객과 서버가 통신할 메시지 형태
 typedef struct __MsgClient {
 	long mtype;						//= MSG_TYPE_CLIENT
@@ -41,5 +47,20 @@ typedef struct __MsgAdmin {
 	bool is_error;					//에러 토큰(정보 제공 거부나 각종 에러 상황시에 쓰임)
 } MsgAdmin;
 
+//클라이언트 작업코드
+enum ClientOffer {
+	CLSIGNIN = 1,	//로그인
+	CLSIGNUP,		//회원 가입
+	CLDEPOSIT,		//입금
+	CLWITHDRAW		//출금
+};
+
+//관리자 작업코드
+enum AdminOffer {
+	ADSIGNIN = 1,	//로그인
+	ADLOOKALLCLIENT,//클라이언트 전체 조회
+	ADMODIFYCLINFO,	//클라이언트 정보 수정
+	ADSIGNUP		//회원가입
+};
 
 #endif

@@ -103,7 +103,7 @@ int main(int argc, char const *argv[]) {
 			//클라이언트로 테스트
 			case 1: {		
 				//클라이언트용 메시지큐 생성
-				int msq_client_id = msgget(msq_key, IPC_CREAT | 0777);
+				int msq_client_id = msgget(msq_key, IPC_CREAT | 0666);
 				if(msq_client_id == -1) {
 					perror("msgget() error!(클라이언트 메시지큐 생성 실패) : ");
 					kill(getpid(), SIGINT);
@@ -313,6 +313,7 @@ int main(int argc, char const *argv[]) {
 						}	
 					}
 					cout.clear();
+					cout << endl;
 				}
 
 			}
