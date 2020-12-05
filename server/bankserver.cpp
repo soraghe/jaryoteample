@@ -28,7 +28,7 @@ int main(int argc, char const* argv[]) {
 	pid_t pid = 0;
 
 	//ipc사용을 위한 키 획득
-	msq_key = ftok(".", 31);
+	msq_key = ftok("/", 31);
 	if(msq_key == -1){
 		perror("ftok() error!(ipc 키생성 실패) : ");
 		kill(getpid(), SIGINT);
@@ -296,7 +296,7 @@ int main(int argc, char const* argv[]) {
 					case ADMODIFYCLINFO: {	//클라이언트 정보수정
 						cout << "ADMODIFYCLINFO : (from " << admin.adminId << ")  (client ID : " << admin.data.clientId << ")";
 						
-						/*//존재하는 고객인지 먼저 체크
+						//존재하는 고객인지 먼저 체크
 
 						if(is_our_client(admin.data.clientId) == false) {
 							admin.is_error = true;
@@ -306,8 +306,8 @@ int main(int argc, char const* argv[]) {
 								kill(getpid(), SIGUSR2);
 							}
 							cout << "  >>  거부" << endl;
-						}*/
-					//	else {//기존 고객이면
+						}
+						else {//기존 고객이면
 							ClientInfo* temp = (ClientInfo*)pull_client_info(admin.data.clientId);
 							if(strcmp(admin.data.clientPw, "\0") != 0)
 								strcpy(temp->clientPw, admin.data.clientPw);
