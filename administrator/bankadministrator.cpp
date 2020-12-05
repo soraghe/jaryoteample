@@ -29,6 +29,9 @@ int main(int argc, char const *argv[]) {
 
 	//시그널 제어방식 재정의
 	signal(SIGINT, signalHandler);
+	
+	AdminInfo admin_localInfo;
+	memset(&admin_localInfo, 0x00, sizeof(AdminInfo));
 
 	while(1)
 	{
@@ -46,16 +49,16 @@ int main(int argc, char const *argv[]) {
 						//사용자 입력
 						cout << "\n----- 관리자 로그인 -----" << endl;
 						cout << "관리자 ID : ";
-						cin >> admin_id;                //테스트 id = "admin1234"
+						cin >> admin_localInfo.adminId;                //테스트 id = "admin1234"
 						cout << "관리자 PW : ";
-						cin >> admin_pw;                //테스트 pw = "asdf1234!@"
+						cin >> admin_localInfo.adminPw;                //테스트 pw = "asdf1234!@"
 
 						cout.clear();cin.clear();
 
 						//admin에 ID와 PW정보를 담아 메시지 송신
 						admin.mtype = MSG_TYPE_ADMIN;
-						strcpy(admin.adminId, admin_id);
-						strcpy(admin.adminPw, admin_pw);
+						strcpy(admin.adminId, admin_localInfo.adminId);
+						strcpy(admin.adminPw, admin_localInfo.adminPw);
 						int sndSize = msgsnd(msq_id, &admin, MSG_SIZE_ADMIN, 0);
 						//msgsnd() 예외처리
 						if(sndSize != 0){
@@ -113,6 +116,7 @@ int main(int argc, char const *argv[]) {
 									}
 									break;
 						       }	
+						        strcpy(admin.adminId, admin_localInfo.adminId);
 						       admin.mtype = MSG_TYPE_ADMIN;
 						       int sndSize = msgsnd(msq_id, &admin, MSG_SIZE_ADMIN, 0);
 						       //msgsnd() 예외처리
@@ -155,10 +159,10 @@ int main(int argc, char const *argv[]) {
 
 						      //클라이언트 정보 수정
 						      cout << "\n--- 클라이언트 정보 수정 ---" << endl;
-						      cout << "수정할 고객의 아이디 입력\n>>> ";
+						      cout << "수정할 고객의 ID  입력\n>>> ";
 						      cin >> admin_data_id;
 							  
-								//>>여기에 잘못된 ID입력에 대한 처리를 해주세요(server/bankserver.cpp 참고)
+						     //>>여기에 잘못된 ID입력에 대한 처리를 해주세요(server/bankserver.cpp 참고)
 
 
 						      cout << "수정할 고객의 데이터 선택\n1.비밀번호\n2.고객 이름\n3.고객 계좌번호\n>>> ";
@@ -189,7 +193,7 @@ int main(int argc, char const *argv[]) {
 									      //고객정보 수정 수신 성공 시 결과에 따라 메시지 출력
 									      else if(rcvSize != -1) {
 										      if(admin.is_error == true){
-											      cout << "고객정보 수정 실패.\n" << endl;
+											      cout << "고객정보 수정 실패(사유 : 해당 ID없음)\n" << endl;
 											      break;
 										      }
 										      else{
@@ -222,7 +226,7 @@ int main(int argc, char const *argv[]) {
 									      //고객정보 수정 수신 성공 시 결과에 따라 메시지 출력
 									      else if(rcvSize != -1) {
 										      if(admin.is_error == true){
-											      cout << "고객정보 수정 실패.\n" << endl;
+											      cout << "고객정보 수정 실패(사유 : 해당 ID없음)\n" << endl;
 											      break;
 										      }
 										      else{
@@ -255,7 +259,7 @@ int main(int argc, char const *argv[]) {
 									      //고객정보 수정 수신 성공 시 결과에 따라 메시지 출력
 									      else if(rcvSize != -1) {
 										      if(admin.is_error == true){
-											      cout << "고객정보 수정 실패.\n" << endl;
+											      cout << "고객정보 수정 실패(사유 : 해당 ID없음)\n" << endl;
 											      break;
 										      }
 										      else{
