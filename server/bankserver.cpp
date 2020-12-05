@@ -329,7 +329,7 @@ int main(int argc, char const* argv[]) {
 								kill(getpid(), SIGUSR2);
 							}
 							cout << "  >>  수정완료" << endl;
-					//	}
+						}
 						break;
 					}
 					case ADSIGNUP: {			//관리자 등록
