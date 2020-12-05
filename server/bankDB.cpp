@@ -219,6 +219,38 @@ bool is_our_admin(const char* ID) {
 	return false;	//파일의 끝까지 일치하는 정보가 없으면 false
 }
 
+//오버딩(관리자 ID 중복검사)
+bool is_our_admin(const char* ID, const char* PW) {
+	AdminInfo* target = new AdminInfo();	//리턴값
+	ssize_t rsize = 0;
+
+	//파일 열기
+	string adminListpath = "DB_admin.dat";//읽어올 파일 경로
+	int fd = open(adminListpath.c_str(), O_RDONLY, 0644);
+	if(fd == -1){
+		perror("open() error!(파일 조회를 위한 파일 열기 실패) : ");
+		return false;
+	}
+	
+	//파일의 끝까지 읽기
+	do {
+		memset(target, 0x00, sizeof(AdminInfo));//구조체 초기화
+		rsize = read(fd, (AdminInfo *)target, sizeof(AdminInfo));
+		if(rsize == -1) {
+			perror("read() error!(DB파일 읽기 실패) : ");
+			return false;
+		}
+		//인자로 들어온 ID/PW와 동일한 ID를 가진 정보가 파일에 있으면
+		else if(strcmp(target->adminId, ID) == 0 && strcmp(target->adminPw, PW) == 0) {
+			close(fd);
+			return true;
+		}
+	} while(rsize > 0);
+
+	close(fd);
+	return false;	//파일의 끝까지 일치하는 정보가 없으면 false
+}
+
 //관리자정보 추가
 bool add_admin_info(const AdminInfo& info) {
 	//clientsDB.dat에 동일 아이디가 있으면 false

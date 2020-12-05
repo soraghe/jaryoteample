@@ -256,7 +256,7 @@ int main(int argc, char const* argv[]) {
 					case ADSIGNIN: {			//관리자 로그인
 						cout << "ADSIGNIN : (ID: " << admin.adminId << ")"; 
 						//관리자DB에 있는 ID이면
-						if(is_our_admin(admin.adminId) == true) {
+						if(is_our_admin(admin.adminId, admin.adminPw) == true) {
 							admin.is_error = false;
 							int sndSize = msgsnd(msq_admin_id, &admin, MSG_SIZE_ADMIN, 0);
 							if(sndSize != 0) {
@@ -308,17 +308,16 @@ int main(int argc, char const* argv[]) {
 							int sndSize = msgsnd(msq_admin_id, &admin, MSG_SIZE_ADMIN, 0);
 							if(sndSize != 0) {//거부 메시지 전송 실패
 								perror("msgsnd() error!(ADMODIFYINFO - 거부 메시지 전송 실패) ");
-								kill(getpid(), SIGUSR2);
 							}
 							cout << "  >>  거부" << endl;
 						}
 						else {//기존 고객이면
 							ClientInfo* temp = (ClientInfo*)pull_client_info(admin.data.clientId);
-							if(strcmp(admin.data.clientPw, "\0") != 0)
+							if(strlen(admin.data.clientPw) > 0)
 								strcpy(temp->clientPw, admin.data.clientPw);
-							if(strcmp(admin.data.clientName, "\0") != 0)
+							else if(strlen(admin.data.clientName) > 0)
 								strcpy(temp->clientName, admin.data.clientName);
-							if(strcmp(admin.data.clientAccountNum, "\0") != 0)
+							else if(strlen(admin.data.clientAccountNum) > 0)
 								strcpy(temp->clientAccountNum, admin.data.clientAccountNum);
 							modify_client_info(*temp);
 							admin.data = *temp;
@@ -326,7 +325,6 @@ int main(int argc, char const* argv[]) {
 							int sndSize = msgsnd(msq_admin_id, &admin, MSG_SIZE_ADMIN, 0);
 							if(sndSize != 0) {//거부 메시지 전송 실패
 								perror("msgsnd() error!(ADMODIFYINFO - 수정 완료 메시지 전송 실패) ");
-								kill(getpid(), SIGUSR2);
 							}
 							cout << "  >>  수정완료" << endl;
 						}
@@ -346,7 +344,6 @@ int main(int argc, char const* argv[]) {
 								int sndSize = msgsnd(msq_admin_id, &admin, MSG_SIZE_ADMIN, 0);
 								if(sndSize != 0) {//승인 메시지 전송 실패
 									perror("msgsnd() error!(ADSIGNUP - 승인 메시지 전송 실패) : ");
-									kill(getpid(),SIGUSR2);
 								}
 								cout<< "  >>  승인" << endl;
 							}
@@ -356,7 +353,6 @@ int main(int argc, char const* argv[]) {
 							int sndSize = msgsnd(msq_admin_id, &admin, MSG_SIZE_ADMIN, 0);
 							if(sndSize != 0) {//승인 메시지 전송 실패
 								perror("msgsnd() error!(ADSIGNUP - 거부 메시지 전송 실패) : ");
-								kill(getpid(),SIGUSR2);
 							}
 							cout<< "  >>  거부" << endl;
 						}
@@ -384,7 +380,6 @@ void signalHandler(int signum) {
 		}
 		case SIGUSR1: {//클라이언트에 문제 발생 시 메시지큐 제거
 			msgctl(msq_client_id, IPC_RMID, NULL);
-
 			exit(1);
 		}
 		case SIGUSR2: {//관리자에 문제 발생 시 메시지큐 제거
