@@ -1,4 +1,4 @@
-#include "msq.h"
+#include "msq_admin.h"
 #include <signal.h>
 #include <iostream>
 #include <cstdlib>

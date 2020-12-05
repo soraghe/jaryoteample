@@ -29,36 +29,4 @@ typedef struct __AdminInfo{
 	char adminPw[20];
 } AdminInfo;
 
-//고객과 서버가 통신할 메시지 형태
-typedef struct __MsgClient {
-	long mtype;						//= MSG_TYPE_CLIENT
-	int cmd;						//작업 코드(메시지의 형태는 건들지 않고 이 작업코드로 다른 동작을 실행하도록 구성)
-	struct __ClientInfo data;		//고객 정보
-	bool is_error;					//에러 토큰(정보 제공 거부나 각종 에러 상황시에 쓰임)
-} MsgClient;
-
-//관리자와 서버가 통신할 메시지 형태
-typedef struct __MsgAdmin {
-	long mtype;						//= MSG_TYPE_ADMIN
-	int cmd;						//작업 코드
-	char adminId[20];				//관리자 ID
-	char adminPw[20];				//관리자 PW
-	struct __ClientInfo data; 		//고객 정보(추후 변경 가능)
-	bool is_error;					//에러 토큰(정보 제공 거부나 각종 에러 상황시에 쓰임)
-} MsgAdmin;
-
-enum ClientOffer {
-	CLSIGNIN = 1,	//로그인
-	CLSIGNUP,		//회원 가입
-	CLDEPOSIT,		//입금
-	CLWITHDRAW		//출금
-};
-enum AdminOffer {
-	ADSIGNIN = 11,
-	ADLOOKALLCLIENT,
-	ADMODIFYCLINFO,
-	ADSIGNUP,
-	ADSIGNOUT
-};
-
 #endif

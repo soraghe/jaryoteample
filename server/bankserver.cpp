@@ -39,7 +39,7 @@ int main(int argc, char const* argv[]) {
 	signal(SIGUSR1, signalHandler);	//클라이언트 메시지큐 에러 시그널
 	signal(SIGUSR2, signalHandler);	//관리자 메시지큐 에러 시그널
 	
-	//자식프로세스를 생성하여 부모프로세스에서는 클라이언트와 통신, 자식프로세스에서는 관리자와 통신하도록 구성
+	//자식프로세스를 생성하여 부모프로//사용했던 로컬, 메시지타입 구조체들 초기화세스에서는 클라이언트와 통신, 자식프로세스에서는 관리자와 통신하도록 구성
 	pid = fork();
 
 	//fork() 예외처리
@@ -82,31 +82,36 @@ int main(int argc, char const* argv[]) {
 					case CLSIGNIN:	{	//고객 로그인(임시 테스트)
 										//날아온 메시지의 ID와 PW 일치 여부에 따라 정보를 제공하거나, 제공을 거부함 
 						//DB에서 ID와 일치하는 고객정보를 읽어옴
-						cout << "CLSIGNIN : (ID: " << client.data.clientId << " / PW: " << client.data.clientPw << ")"; 
-						ClientInfo* temp = (ClientInfo*)pull_client_info(client.data.clientId);
-						//ID/PW가 일치하면
-						if(strcmp(client.data.clientPw, temp->clientPw) == 0 && strlen(temp->clientId) > 1) {
-							//MsgClient구조체에 정보(더미 데이터)를 담아 메시지 송신
-							strcpy(client.data.clientName, temp->clientName);
-							strcpy(client.data.clientResRegNum, temp->clientResRegNum);
-							strcpy(client.data.clientAccountNum, temp->clientAccountNum);
-							client.data.clientBalance = temp->clientBalance;
+						cout << "CLSIGNIN : (ID: " << client.data.clientId << ")"; 
+						//ID가 DB에 존재하는지 검사
+						if(is_our_client(client.data.clientId) == true) {//ID 일치
+							ClientInfo* temp = (ClientInfo*)pull_client_info(client.data.clientId);
+							//PW검사
+							if(strcmp(client.data.clientPw, temp->clientPw) == 0) {//PW까지 일치하면
+								//MsgClient구조체에 정보(더미 데이터)를 담아 메시지 송신
+								strcpy(client.data.clientName, temp->clientName);
+								strcpy(client.data.clientResRegNum, temp->clientResRegNum);
+								strcpy(client.data.clientAccountNum, temp->clientAccountNum);
+								client.data.clientBalance = temp->clientBalance;
 
-							cout << "  >>  승인" << endl;
-							if(msgsnd(msq_client_id, &client, MSG_SIZE_CLIENT, 0) != 0){
-								perror("msgsnd() error!(로그인 - 회원정보 송신 실패) : ");
-								kill(getpid(), SIGUSR1);
+								cout << "  >>  승인" << endl;
+								client.is_error = false;
+								if(msgsnd(msq_client_id, &client, MSG_SIZE_CLIENT, 0) != 0){
+									perror("msgsnd() error!(CLSIGNIN - 회원정보 송신 실패) : ");
+									kill(getpid(), SIGUSR1);
+								}
+								break;
 							}
 						}
 						//ID/PW가 일치하지 않으면 로그인 거부 메시지 송신
-						else{
+						else if (is_our_client(client.data.clientId) == false) {
 							//(bool) MsgClient.is_error을 참으로 변경한 뒤 메시지 송신
 							cout << "  >>  거부" << endl;
 							client.is_error = true;
 							int sndSize = msgsnd(msq_client_id, &client, MSG_SIZE_CLIENT, 0);
 							//송신 실패 시
 							if(sndSize != 0) {
-								perror("msgsnd() error!(로그인 - 로그인 승인거부 메시지 송신 실패) ");
+								perror("msgsnd() error!(CLSIGNIN - 로그인 거부 메시지 송신 실패) ");
 								kill(getpid(),SIGUSR1);
 							}
 						}
@@ -124,7 +129,7 @@ int main(int argc, char const* argv[]) {
 							strcpy(client.data.clientAccountNum, temp->clientAccountNum);
 							int sndSize = msgsnd(msq_client_id, &client, MSG_SIZE_CLIENT, 0);
 							if(sndSize != 0){//송신 실패 시
-								perror("msgsnd() error!(회원가입 - 회원가입 승인 메시지 송신 실패) ");
+								perror("msgsnd() error!(CLSIGNUP - 회원가입 승인 메시지 송신 실패) ");
 								kill(getpid(), SIGUSR1);
 							}
 							cout << "  >>  승인" << endl;
@@ -136,7 +141,7 @@ int main(int argc, char const* argv[]) {
 							//메시지 전송
 							int sndSize = msgsnd(msq_client_id, &client, MSG_SIZE_CLIENT, 0);
 							if(sndSize != 0){//송신 실패 시
-								perror("msgsnd() error!(회원가입 - 회원가입 거부 메시지 송신 실패) ");
+								perror("msgsnd() error!(CLSIGNUP - 회원가입 거부 메시지 송신 실패) ");
 								kill(getpid(), SIGUSR1);
 							}
 							cout << "  >>  거부 : " << client.data.clientId << endl;
@@ -147,16 +152,16 @@ int main(int argc, char const* argv[]) {
 						//고객정보를 전송(동기화 목적)
 						ClientInfo* temp = (ClientInfo*)pull_client_info(client.data.clientId);				
 						client.data.clientBalance = temp->clientBalance;
-						cout << client.data.clientName << "님의 입금 요청";
+						cout << "CLDEPOSIT : (ID: " << client.data.clientId << ")";
 						int sndSize = msgsnd(msq_client_id, &client, MSG_SIZE_CLIENT, 0);
 						if(sndSize != 0) {
-							perror("msgsnd() error!(입금 - 회원정보 송신 실패) : ");
+							perror("msgsnd() error!(CLDEPOSIT - 회원정보 송신 실패) : ");
 							kill(getpid(), SIGUSR1);
 						}
 						else {//입금 금액정보 수신
 							int rcvSize = msgrcv(msq_client_id, &client, MSG_SIZE_CLIENT, MSG_TYPE_CLIENT, 0);
 							if(rcvSize == -1) {
-								perror("msgrcv() error!(입금 - 입금액 정보 수신 실패) : ");
+								perror("msgrcv() error!(CLDEPOSIT - 입금액 정보 수신 실패) : ");
 								kill(getpid(), SIGUSR1);
 							}
 							else { 
@@ -173,7 +178,7 @@ int main(int argc, char const* argv[]) {
 								//갱신 정보 전송
 								int sndSize = msgsnd(msq_client_id, &client, MSG_SIZE_CLIENT, 0);
 								if(sndSize != 0) {//전송 실패
-									perror("msgsnd() error!(입금 - 갱신정보 송신 실패) : ");
+									perror("msgsnd() error!(CLDEPOSIT - 갱신정보 송신 실패) : ");
 									kill(getpid(), SIGUSR1);
 								}
 							}
@@ -181,19 +186,19 @@ int main(int argc, char const* argv[]) {
 						break;
 					}
 					case CLWITHDRAW: {	//고객 출금
-						//고객정보를 전송(동기화 목적)				
+						cout << "CLWITHDRAW : (ID: " << client.data.clientId << ")";
+						//고객정보를 전송(동기화 목적)
 						ClientInfo* temp = (ClientInfo*)pull_client_info(client.data.clientId);
 						client.data = *temp;
-						cout << client.data.clientName << "님의 출금 요청";
 						int sndSize = msgsnd(msq_client_id, &client, MSG_SIZE_CLIENT, 0);
 						if(sndSize != 0) {
-							perror("msgsnd() error!(출금 - 회원정보 송신 실패) : ");
+							perror("msgsnd() error!(CLWITHDRAW - 회원정보 송신 실패) : ");
 							kill(getpid(), SIGUSR1);
 						}
 						else {//입금 금액정보 수신
 							int rcvSize = msgrcv(msq_client_id, &client, MSG_SIZE_CLIENT, MSG_TYPE_CLIENT, 0);
 							if(rcvSize == -1) {
-								perror("msgrcv() error!(출금 - 출금액 정보 수신 실패) : ");
+								perror("msgrcv() error!(CLWITHDRAW - 출금액 정보 수신 실패) : ");
 								kill(getpid(), SIGUSR1);
 							}
 							else { 
@@ -211,7 +216,7 @@ int main(int argc, char const* argv[]) {
 								//갱신 정보 전송
 								int sndSize = msgsnd(msq_client_id, &client, MSG_SIZE_CLIENT, 0);
 								if(sndSize != 0) {//전송 실패
-									perror("msgsnd() error!(출금 - 갱신정보 송신 실패) : ");
+									perror("msgsnd() error!(CLWITHDRAW - 갱신정보 송신 실패) : ");
 									kill(getpid(), SIGUSR1);
 								}
 							}
@@ -255,7 +260,7 @@ int main(int argc, char const* argv[]) {
 							admin.is_error = false;
 							int sndSize = msgsnd(msq_admin_id, &admin, MSG_SIZE_ADMIN, 0);
 							if(sndSize != 0) {
-								perror("msgsnd() error!(로그인 - ID/PW 전송 실패) ");
+								perror("msgsnd() error!(ADSIGNIN - 승인 메시지 전송 실패) ");
 								kill(getpid(), SIGUSR2);
 							}
 							cout << "  >>  승인" << endl;
@@ -264,7 +269,7 @@ int main(int argc, char const* argv[]) {
 							admin.is_error = true;
 							int sndSize = msgsnd(msq_admin_id, &admin, MSG_SIZE_ADMIN, 0);
 							if(sndSize != 0) {
-								perror("msgsnd() error!(로그인 - ID/PW 전송 실패) ");
+								perror("msgsnd() error!(ADSIGNIN - 거부 메시지 전송 실패) ");
 								kill(getpid(), SIGUSR2);
 							}
 							cout << "  >>  거부" << endl;
@@ -279,7 +284,7 @@ int main(int argc, char const* argv[]) {
 							admin.data = *temp;
 							int sndSize = msgsnd(msq_admin_id, &admin, MSG_SIZE_ADMIN, 0);
 							if(sndSize != 0) {
-								perror("msgsnd() error!(클라이언트 검색 - 고객정보 전송 실패) : ");
+								perror("msgsnd() error!(ADSEARCHCLIENT - 고객정보 전송 실패) : ");
 							}
 							cout << "  >>  전송완료(client ID : " << admin.data.clientId << ")" << endl;
 						}
@@ -287,7 +292,7 @@ int main(int argc, char const* argv[]) {
 							admin.is_error = true;
 							int sndSize = msgsnd(msq_admin_id, &admin, MSG_SIZE_ADMIN, 0);
 							if(sndSize != 0) {
-								perror("msgsnd() error!(클라이언트 검색 - 거부 메시지 전송 실패) : ");
+								perror("msgsnd() error!(ADSEARCHCLIENT - 거부 메시지 전송 실패) : ");
 							}
 							cout << "  >>  거부" << endl;
 						}
@@ -340,7 +345,7 @@ int main(int argc, char const* argv[]) {
 								admin.is_error = false;
 								int sndSize = msgsnd(msq_admin_id, &admin, MSG_SIZE_ADMIN, 0);
 								if(sndSize != 0) {//승인 메시지 전송 실패
-									perror("msgsnd() error!(회원가입 - 승인 메시지 전송 실패) : ");
+									perror("msgsnd() error!(ADSIGNUP - 승인 메시지 전송 실패) : ");
 									kill(getpid(),SIGUSR2);
 								}
 								cout<< "  >>  승인" << endl;
@@ -350,7 +355,7 @@ int main(int argc, char const* argv[]) {
 							admin.is_error = true;
 							int sndSize = msgsnd(msq_admin_id, &admin, MSG_SIZE_ADMIN, 0);
 							if(sndSize != 0) {//승인 메시지 전송 실패
-								perror("msgsnd() error!(회원가입 - 거부 메시지 전송 실패) : ");
+								perror("msgsnd() error!(ADSIGNUP - 거부 메시지 전송 실패) : ");
 								kill(getpid(),SIGUSR2);
 							}
 							cout<< "  >>  거부" << endl;
@@ -377,22 +382,13 @@ void signalHandler(int signum) {
 			msgctl(msq_admin_id, IPC_RMID, NULL);
 			exit(0);
 		}
-		case SIGUSR1: {//클라이언트에 문제 발생 시 메시지큐 제거(복구 기능을 구현하고 싶은데, 아직 미구현임)
+		case SIGUSR1: {//클라이언트에 문제 발생 시 메시지큐 제거
 			msgctl(msq_client_id, IPC_RMID, NULL);
-//			msq_client_id = msgget(msq_key, IPC_CREAT | 0666);	
-//			if(msq_client_id == -1) {
-//				perror("msgget() error!(클라이언트 메시지큐 복구 실패) : ");
-//				kill(getpid(), SIGUSR1);
-//			}
+
 			exit(1);
 		}
 		case SIGUSR2: {//관리자에 문제 발생 시 메시지큐 제거
 			msgctl(msq_admin_id, IPC_RMID, NULL);
-//			msq_admin_id = msgget(msq_key, IPC_CREAT | 0666);
-//			if(msq_admin_id == -1) {
-//				perror("msgget() error!(관리자 메시지큐 복구 실패) : ");
-//				kill(getpid(), SIGUSR2);
-//			}
 			exit(2);
 		}
 	}

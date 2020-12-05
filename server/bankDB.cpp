@@ -20,7 +20,7 @@ void* pull_client_info(const char* ID) {
 	ssize_t rsize = 0;	//clientDB.dat에서 읽어들인 데이터의 크기
 
 	//파일 열기(./clientsDB.dat)
-	string clientDBpath = "./DB_client.dat";//클라이언트 DB 경로
+	string clientDBpath = "DB_client.dat";//클라이언트 DB 경로
 	int fd = open(clientDBpath.c_str(), O_RDONLY, 0644);
 	if(fd == -1){
 		perror("open() error!(파일 조회를 위한 파일 열기 실패) : ");
@@ -50,7 +50,7 @@ void* pull_client_info(const ClientInfo& info) {
 	ssize_t rsize = 0;	//clientDB.dat에서 읽어들인 데이터의 크기
 
 	//파일 열기(./clientsDB.dat)
-	string clientDBpath = "./DB_client.dat";//클라이언트 DB 경로
+	string clientDBpath = "DB_client.dat";//클라이언트 DB 경로
 	int fd = open(clientDBpath.c_str(), O_RDONLY, 0644);
 	if(fd == -1){
 		perror("open() error!(파일 조회를 위한 파일 열기 실패) : ");
@@ -127,7 +127,7 @@ bool add_client_info(const ClientInfo& info) {
 	ss >> newClient.clientAccountNum;
 
 	//clientsDB.dat에 정보 저장
-	string clientDBpath = "./DB_client.dat";
+	string clientDBpath = "DB_client.dat";
 	int fd = open(clientDBpath.c_str(), O_CREAT | O_APPEND | O_WRONLY, 0644);
 	if(fd == -1){
 		perror("open() error!(쓰기위해 파일 열기) : ");
@@ -148,7 +148,7 @@ bool modify_client_info(const ClientInfo& info) {
 	ssize_t rsize = 0;
 	ClientInfo* target = new ClientInfo();
 
-	string clientDBpath = "./DB_client.dat";//클라이언트 DB 경로
+	string clientDBpath = "DB_client.dat";//클라이언트 DB 경로
 	fd = open(clientDBpath.c_str(), O_RDWR, 0644);	//읽기와 쓰기 권한 모두 허가한 채 open()
 	if(fd == -1) {//파일 옇기 실패
 		perror("open() error!(파일 조회를 위한 파일 열기 실패) : ");
@@ -193,7 +193,7 @@ bool is_our_admin(const char* ID) {
 	ssize_t rsize = 0;
 
 	//파일 열기
-	string adminListpath = "./DB_admin.dat";//읽어올 파일 경로
+	string adminListpath = "DB_admin.dat";//읽어올 파일 경로
 	int fd = open(adminListpath.c_str(), O_RDONLY, 0644);
 	if(fd == -1){
 		perror("open() error!(파일 조회를 위한 파일 열기 실패) : ");
@@ -203,13 +203,13 @@ bool is_our_admin(const char* ID) {
 	//파일의 끝까지 읽기
 	do {
 		memset(target, 0x00, sizeof(AdminInfo));//구조체 초기화
-		rsize = read(fd, (MsgAdmin *)target, sizeof(AdminInfo));
+		rsize = read(fd, (AdminInfo *)target, sizeof(AdminInfo));
 		if(rsize == -1) {
 			perror("read() error!(DB파일 읽기 실패) : ");
 			return false;
 		}
-		//인자로 들어온 ID/PW와 동일한 ID/PW를 가진 정보가 파일에 있으면
-		else if(rsize > 0 && strcmp(target->adminId, ID) == 0) {
+		//인자로 들어온 ID/PW와 동일한 ID를 가진 정보가 파일에 있으면
+		else if(strcmp(target->adminId, ID) == 0) {
 			close(fd);
 			return true;
 		}
@@ -233,7 +233,7 @@ bool add_admin_info(const AdminInfo& info) {
 	strcpy(newAdmin.adminPw, info.adminPw);
 
 	//adminList.dat에 정보 저장
-	string adminListpath = "./DB_admin.dat";//읽어올 파일 경로
+	string adminListpath = "DB_admin.dat";//읽어올 파일 경로
 	int fd = open(adminListpath.c_str(), O_CREAT | O_APPEND | O_WRONLY, 0644);
 	if(fd == -1){
 		perror("open() error!(쓰기위해 파일 열기) : ");
