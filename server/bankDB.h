@@ -55,6 +55,13 @@ bool modify_client_info(const ClientInfo& info);
 //		(2) 파일 내에 일치하는 ID가 없거나 오류 발생 시, false
 bool is_our_admin(const char* ID);				
 
+//adminList.dat 파일 내에 같은 관리자계정이 존재하는 지 검사하는 함수 (PW까지 검사)
+//- 사전 정의: 비어있지 않은 관리자의 ID/PW
+//- 사후 정의:
+//		(1) 파일에 있는 ID/PW와 일치하는 ID/PW가 있으면, true
+//		(2) 파일 내에 일치하는 ID/PW가 없거나 오류 발생 시, false
+bool is_our_admin(const char* ID, const char * PW);		
+
 //adminList.dat 파일에 새로운 고객정보를 추가하는 함수 
 //- 사전 정의: 추가하려는 고객 정보가 담긴 AdminInfo 구조체
 //- 사후 정의: 
