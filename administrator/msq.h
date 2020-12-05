@@ -58,7 +58,7 @@ enum ClientOffer {
 //관리자 작업코드
 enum AdminOffer {
 	ADSIGNIN = 1,	//로그인
-	ADLOOKALLCLIENT,//클라이언트 전체 조회
+	ADSEARCHCLIENT,//클라이언트 전체 조회
 	ADMODIFYCLINFO,	//클라이언트 정보 수정
 	ADSIGNUP		//회원가입
 };

@@ -27,15 +27,13 @@ int main(int argc, char const *argv[]) {
 		kill(getpid(), SIGINT);
 	}
 
-	//메시지 타입 구조체 초기화
-
-	memset(&admin, 0x00, sizeof(MsgAdmin));
-
 	//시그널 제어방식 재정의
 	signal(SIGINT, signalHandler);
 
 	while(1)
 	{
+		//메시지 타입 구조체 초기화
+		memset(&admin, 0x00, sizeof(MsgAdmin));
 		cout << "===작업 선택===\n1.관리자 로그인\n2.클라이언트 정보 조회\n3.클라이언트 정보수정\n4.관리자 등록\n5.관리자 로그아웃\n";
 		cout << ">>>>";
 		cin >> admin.cmd;
@@ -85,7 +83,7 @@ int main(int argc, char const *argv[]) {
 
 						break;
 					}
-			case ADLOOKALLCLIENT : {       //클라이언트 조회
+			case ADSEARCHCLIENT : {       //클라이언트 조회
 						       int num;  // 선택할 변수
 						       char admin_data_id[20] = {0};
 						       char admin_data_name[20] = {0};
@@ -159,6 +157,10 @@ int main(int argc, char const *argv[]) {
 						      cout << "\n--- 클라이언트 정보 수정 ---" << endl;
 						      cout << "수정할 고객의 아이디 입력\n>>> ";
 						      cin >> admin_data_id;
+							  
+								//>>여기에 잘못된 ID입력에 대한 처리를 해주세요(server/bankserver.cpp 참고)
+
+
 						      cout << "수정할 고객의 데이터 선택\n1.비밀번호\n2.고객 이름\n3.고객 계좌번호\n>>> ";
 						      cin >> num;
 						      switch(num)
@@ -174,7 +176,7 @@ int main(int argc, char const *argv[]) {
 									      strcpy(admin.data.clientPw, admin_data_pw);
 									      int sndSize = msgsnd(msq_id, &admin, MSG_SIZE_ADMIN, 0);
 									      //msgsnd() 예외처리
-									      if(sndSize != 0){
+									      if(sndSize != 0) {
 										      perror("msgsnd() error!(로그인 - ID/PW 전송 실패) ");
 										      kill(getpid(), SIGINT);
 									      }
