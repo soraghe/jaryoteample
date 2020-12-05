@@ -83,7 +83,7 @@ int main(int argc, char const* argv[]) {
 										//날아온 메시지의 ID와 PW 일치 여부에 따라 정보를 제공하거나, 제공을 거부함 
 						//DB에서 ID와 일치하는 고객정보를 읽어옴
 						cout << "CLSIGNIN : (ID: " << client.data.clientId << " / PW: " << client.data.clientPw << ")"; 
-						ClientInfo* temp = pull_client_info(client.data.clientId);
+						ClientInfo* temp = (ClientInfo*)pull_client_info(client.data.clientId);
 						//ID/PW가 일치하면
 						if(strcmp(client.data.clientPw, temp->clientPw) == 0 && strlen(temp->clientId) > 1) {
 							//MsgClient구조체에 정보(더미 데이터)를 담아 메시지 송신
@@ -120,7 +120,7 @@ int main(int argc, char const* argv[]) {
 						if(is_our_client(client.data.clientId) == false) {
 							add_client_info(client.data);	//DB에 회원정보 생성(계좌번호 생성)
 							//DB에서 추가된 회원정보를 가져와서 메시지 전송(계좌번호 추가됨)
-							ClientInfo* temp = pull_client_info(client.data.clientId);
+							ClientInfo* temp = (ClientInfo*)pull_client_info(client.data.clientId);
 							strcpy(client.data.clientAccountNum, temp->clientAccountNum);
 							int sndSize = msgsnd(msq_client_id, &client, MSG_SIZE_CLIENT, 0);
 							if(sndSize != 0){//송신 실패 시
@@ -145,7 +145,7 @@ int main(int argc, char const* argv[]) {
 					}
 					case CLDEPOSIT: {	//고객 입금
 						//고객정보를 전송(동기화 목적)
-						ClientInfo* temp = pull_client_info(client.data.clientId);				
+						ClientInfo* temp = (ClientInfo*)pull_client_info(client.data.clientId);				
 						client.data.clientBalance = temp->clientBalance;
 						cout << client.data.clientName << "님의 입금 요청";
 						int sndSize = msgsnd(msq_client_id, &client, MSG_SIZE_CLIENT, 0);
@@ -163,13 +163,12 @@ int main(int argc, char const* argv[]) {
 								//입금할 액수 출력
 								cout << " : " << client.data.clientBalance << "원" << endl;	
 								//DB에 있는 잔액 + 입금액
-								double num;
-								num = pull_client_info(client.data.clientId)->clientBalance;
-								client.data.clientBalance += num;
+								temp = (ClientInfo*)pull_client_info(client.data.clientId);
+								client.data.clientBalance += temp->clientBalance;
 								//정보 수정
 								modify_client_info(client.data);
 								//client.data 갱신
-								temp = pull_client_info(client.data.clientId);
+								temp = (ClientInfo*)pull_client_info(client.data.clientId);
 								client.data = *temp;
 								//갱신 정보 전송
 								int sndSize = msgsnd(msq_client_id, &client, MSG_SIZE_CLIENT, 0);
@@ -183,7 +182,7 @@ int main(int argc, char const* argv[]) {
 					}
 					case CLWITHDRAW: {	//고객 출금
 						//고객정보를 전송(동기화 목적)				
-						ClientInfo* temp = pull_client_info(client.data.clientId);
+						ClientInfo* temp = (ClientInfo*)pull_client_info(client.data.clientId);
 						client.data = *temp;
 						cout << client.data.clientName << "님의 출금 요청";
 						int sndSize = msgsnd(msq_client_id, &client, MSG_SIZE_CLIENT, 0);
@@ -201,14 +200,13 @@ int main(int argc, char const* argv[]) {
 								//입금할 액수 출력
 								cout << " : " << client.data.clientBalance << "원" << endl;	
 								//DB에 있는 잔액 + 입금액
-								double num;
-								num = pull_client_info(client.data.clientId)->clientBalance;
+								temp = (ClientInfo*)pull_client_info(client.data.clientId);
 								//잔액 - 출금액
-								client.data.clientBalance = num - client.data.clientBalance;
+								client.data.clientBalance = temp->clientBalance - client.data.clientBalance;
 								//정보 수정
 								modify_client_info(client.data);
 								//client.data 갱신
-								temp = pull_client_info(client.data.clientId);
+								temp = (ClientInfo*)pull_client_info(client.data.clientId);
 								client.data.clientBalance = temp->clientBalance;
 								//갱신 정보 전송
 								int sndSize = msgsnd(msq_client_id, &client, MSG_SIZE_CLIENT, 0);
@@ -251,9 +249,10 @@ int main(int argc, char const* argv[]) {
 				//관리자프로그램에서 날아온 작업 코드(admin.cmd)에 따라 해당 동작 수행
 				switch(admin.cmd) {
 					case ADSIGNIN: {			//관리자 로그인
-						cout << "ADSIGNIN : (ID: " << admin.adminId << " / PW: " << admin.adminPw << ")"; 
+						cout << "ADSIGNIN : (ID: " << admin.adminId << ")"; 
 						//관리자DB에 있는 ID이면
-						if(is_our_admin(admin.adminId, admin.adminPw) == true) {
+						if(is_our_admin(admin.adminId) == true) {
+							admin.is_error = false;
 							int sndSize = msgsnd(msq_admin_id, &admin, MSG_SIZE_ADMIN, 0);
 							if(sndSize != 0) {
 								perror("msgsnd() error!(로그인 - ID/PW 전송 실패) ");
@@ -272,37 +271,73 @@ int main(int argc, char const* argv[]) {
 						}
 						break;
 					}
-					case ADLOOKALLCLIENT: {	//클라이언트 전체 조회
-						//미구현
+					case ADSEARCHCLIENT: {	//클라이언트 검색
+						cout << "ADSEARCHCLIENT : (from " << admin.adminId << ")"; 
+						ClientInfo* temp = (ClientInfo*)pull_client_info(admin.data);
+						if(is_our_client(temp->clientId) == true) {
+							admin.is_error = false;
+							admin.data = *temp;
+							int sndSize = msgsnd(msq_admin_id, &admin, MSG_SIZE_ADMIN, 0);
+							if(sndSize != 0) {
+								perror("msgsnd() error!(클라이언트 검색 - 고객정보 전송 실패) : ");
+							}
+							cout << "  >>  전송완료(client ID : " << admin.data.clientId << ")" << endl;
+						}
+						else {
+							admin.is_error = true;
+							int sndSize = msgsnd(msq_admin_id, &admin, MSG_SIZE_ADMIN, 0);
+							if(sndSize != 0) {
+								perror("msgsnd() error!(클라이언트 검색 - 거부 메시지 전송 실패) : ");
+							}
+							cout << "  >>  거부" << endl;
+						}
 						break;
 					}
 					case ADMODIFYCLINFO: {	//클라이언트 정보수정
-						cout << "ADMODIFYCLINFO : (by " << admin.adminId << ")  (client ID : " << admin.data.clientId << ")";
-						modify_client_info(admin.data);
+						cout << "ADMODIFYCLINFO : (from " << admin.adminId << ")  (client ID : " << admin.data.clientId << ")";
+						
+						/*//존재하는 고객인지 먼저 체크
 
-						ClientInfo*newInfo = pull_client_info(admin.data.clientId);
-						strcpy(admin.data.clientId, newInfo->clientId);
-						strcpy(admin.data.clientPw, newInfo->clientPw);
-						strcpy(admin.data.clientName, newInfo->clientName);
-						strcpy(admin.data.clientAccountNum, newInfo->clientAccountNum);
-						int sndSize = msgsnd(msq_admin_id, &admin, MSG_SIZE_ADMIN, 0);
-						//msgsnd() 예외처리
-						if(sndSize != 0){
-							perror("msgsnd() error!(정보수정 - 수정 결과 전송 실패) ");
-							kill(getpid(), SIGUSR2);
-						}
-						cout << "  >>  수정완료" << endl;
+						if(is_our_client(admin.data.clientId) == false) {
+							admin.is_error = true;
+							int sndSize = msgsnd(msq_admin_id, &admin, MSG_SIZE_ADMIN, 0);
+							if(sndSize != 0) {//거부 메시지 전송 실패
+								perror("msgsnd() error!(ADMODIFYINFO - 거부 메시지 전송 실패) ");
+								kill(getpid(), SIGUSR2);
+							}
+							cout << "  >>  거부" << endl;
+						}*/
+					//	else {//기존 고객이면
+							ClientInfo* temp = (ClientInfo*)pull_client_info(admin.data.clientId);
+							if(strcmp(admin.data.clientPw, "\0") != 0)
+								strcpy(temp->clientPw, admin.data.clientPw);
+							if(strcmp(admin.data.clientName, "\0") != 0)
+								strcpy(temp->clientName, admin.data.clientName);
+							if(strcmp(admin.data.clientAccountNum, "\0") != 0)
+								strcpy(temp->clientAccountNum, admin.data.clientAccountNum);
+							modify_client_info(*temp);
+							admin.data = *temp;
+							admin.is_error = false;
+							int sndSize = msgsnd(msq_admin_id, &admin, MSG_SIZE_ADMIN, 0);
+							if(sndSize != 0) {//거부 메시지 전송 실패
+								perror("msgsnd() error!(ADMODIFYINFO - 수정 완료 메시지 전송 실패) ");
+								kill(getpid(), SIGUSR2);
+							}
+							cout << "  >>  수정완료" << endl;
+					//	}
 						break;
 					}
 					case ADSIGNUP: {			//관리자 등록
+						cout << "ADSIGNUP : (ID :" << admin.adminId << ")";
 						//기존 회원이 아니면
-						if(is_our_admin(admin.adminId, admin.adminPw) == false) {
+						if(is_our_admin(admin.adminId) == false) {
 							//ID/PW를 담아 DB에 추가
 							AdminInfo newAdmin;
 							strcpy(newAdmin.adminId, admin.adminId);
 							strcpy(newAdmin.adminPw, admin.adminPw);
-							add_admin_info(newAdmin);
-							if(is_our_admin(admin.adminId, admin.adminPw) == true) {
+							add_admin_info(newAdmin);//관리자 정보를 DB에 추가
+							if(is_our_admin(admin.adminId) == true) { //다시 확인해 추가가 되었으면
+								admin.is_error = false;
 								int sndSize = msgsnd(msq_admin_id, &admin, MSG_SIZE_ADMIN, 0);
 								if(sndSize != 0) {//승인 메시지 전송 실패
 									perror("msgsnd() error!(회원가입 - 승인 메시지 전송 실패) : ");

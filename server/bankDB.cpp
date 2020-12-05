@@ -13,23 +13,18 @@
 using namespace std;
 
 //고객정보 가져오기
-ClientInfo* pull_client_info(const char* ID) {
+void* pull_client_info(const char* ID) {
+	if(strlen(ID) <= 1) return nullptr;
+
 	ClientInfo* target = new ClientInfo();	//리턴값
 	ssize_t rsize = 0;	//clientDB.dat에서 읽어들인 데이터의 크기
-
-	if(strlen(ID) < 1) {
-	//	return nullptr;//빈 ID이면 nullptr 반환
-		memset(target, 0x00, sizeof(ClientInfo));
-		return target;
-	}
 
 	//파일 열기(./clientsDB.dat)
 	string clientDBpath = "./DB_client.dat";//클라이언트 DB 경로
 	int fd = open(clientDBpath.c_str(), O_RDONLY, 0644);
 	if(fd == -1){
 		perror("open() error!(파일 조회를 위한 파일 열기 실패) : ");
-		memset(target, 0x00, sizeof(ClientInfo));
-		return target;
+		return nullptr;
 	}
 	
 	do {//파일의 끝까지 읽기
@@ -37,8 +32,7 @@ ClientInfo* pull_client_info(const char* ID) {
 		rsize = read(fd, (ClientInfo *)target, sizeof(ClientInfo));
 		if(rsize == -1){
 			perror("read() error!(pull_client_info() - DB파일 읽기 실패) : ");
-			memset(target, 0x00, sizeof(ClientInfo));
-			return target;
+			return nullptr;
 		}
 		//인자로 들어온 ID 동일한 ID를 가진 정보가 파일에 있으면
 		else if(strcmp((target)->clientId, ID) == 0) {
@@ -48,13 +42,51 @@ ClientInfo* pull_client_info(const char* ID) {
 	} while(rsize > 0);
 
 	close(fd);
-	memset(target, 0x00, sizeof(ClientInfo));
-	return target;
-//	return nullptr;	//ID가 없으면 nullptr 반환
+	return nullptr;
+}
+//오버로딩(고객정보 가져오기)
+void* pull_client_info(const ClientInfo& info) {
+	ClientInfo* target = new ClientInfo();	//리턴값
+	ssize_t rsize = 0;	//clientDB.dat에서 읽어들인 데이터의 크기
+
+	//파일 열기(./clientsDB.dat)
+	string clientDBpath = "./DB_client.dat";//클라이언트 DB 경로
+	int fd = open(clientDBpath.c_str(), O_RDONLY, 0644);
+	if(fd == -1){
+		perror("open() error!(파일 조회를 위한 파일 열기 실패) : ");
+		return nullptr;
+	}
+	
+	do {//파일의 끝까지 읽기
+		memset(target, 0x00, sizeof(ClientInfo));//구조체 초기화
+		rsize = read(fd, (ClientInfo *)target, sizeof(ClientInfo));
+		if(rsize == -1){
+			perror("read() error!(pull_client_info() - DB파일 읽기 실패) : ");
+			return nullptr;
+		}
+		//ID 비교
+		else if(strcmp((target)->clientId, info.clientId) == 0) {
+			close(fd);
+			return target;//target 반환
+		}
+		//이름 비교
+		else if(strcmp((target)->clientName, info.clientName) == 0) {
+			close(fd);
+			return target;//target 반환
+		}
+		//계좌번호 비교
+		else if(strcmp((target)->clientAccountNum, info.clientAccountNum) == 0) {
+			close(fd);
+			return target;//target 반환
+		}
+	} while(rsize > 0);
+
+	close(fd);
+	return nullptr;
 }
 
 //클라이언트 ID 중복검사
-bool is_our_client(const char* ID) { return (strlen(pull_client_info(ID)->clientId) != 0) ? true : false; }
+bool is_our_client(const char* ID) { return (pull_client_info(ID) != nullptr) ? true : false; }
 
 //클라이언트 정보 추가
 bool add_client_info(const ClientInfo& info) {
@@ -65,16 +97,13 @@ bool add_client_info(const ClientInfo& info) {
 	memset(&newClient, 0x00, sizeof(ClientInfo));
 	
 	//주민번호까지는 그대로 복사
-	if(strlen(info.clientId) == 0) return false;
+	if(strlen(info.clientId) < 1) return false;
 	strcpy(newClient.clientId,info.clientId);
-
-	if(strlen(info.clientPw) == 0) return false;
+	if(strlen(info.clientPw) < 1) return false;
 	strcpy(newClient.clientPw, info.clientPw);
-
-	if(strlen(info.clientName) == 0) return false;
+	if(strlen(info.clientName) < 1) return false;
 	strcpy(newClient.clientName, info.clientName);
-
-	if(strlen(info.clientResRegNum) == 0) return false;
+	if(strlen(info.clientResRegNum) < 1) return false;
 	strcpy(newClient.clientResRegNum, info.clientResRegNum);
 	
 	newClient.clientBalance = 0;
@@ -159,7 +188,7 @@ bool modify_client_info(const ClientInfo& info) {
 }
 
 //관리자 ID 중복검사
-bool is_our_admin(const char* ID, const char* PW) {
+bool is_our_admin(const char* ID) {
 	AdminInfo* target = new AdminInfo();	//리턴값
 	ssize_t rsize = 0;
 
@@ -180,7 +209,7 @@ bool is_our_admin(const char* ID, const char* PW) {
 			return false;
 		}
 		//인자로 들어온 ID/PW와 동일한 ID/PW를 가진 정보가 파일에 있으면
-		else if(strcmp(target->adminId, ID) == 0 && strcmp(target->adminPw, PW) == 0) {
+		else if(rsize > 0 && strcmp(target->adminId, ID) == 0) {
 			close(fd);
 			return true;
 		}
@@ -193,7 +222,8 @@ bool is_our_admin(const char* ID, const char* PW) {
 //관리자정보 추가
 bool add_admin_info(const AdminInfo& info) {
 	//clientsDB.dat에 동일 아이디가 있으면 false
-	if(is_our_admin(info.adminId, info.adminPw)) return false;
+	if(is_our_admin(info.adminId) == true)
+		return false;
 
 	AdminInfo newAdmin;	//새 고객정보
 	memset(&newAdmin, 0x00, sizeof(AdminInfo));
@@ -214,6 +244,5 @@ bool add_admin_info(const AdminInfo& info) {
 		perror("write() error!(파일 쓰기 실패) : ");
 		return false;
 	}
-
 	return true;
 }
