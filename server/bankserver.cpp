@@ -28,7 +28,7 @@ int main(int argc, char const* argv[]) {
 	pid_t pid = 0;
 
 	//ipc사용을 위한 키 획득
-	msq_key = ftok(".", 31);
+	msq_key = ftok("/", 31);
 	if(msq_key == -1){
 		perror("ftok() error!(ipc 키생성 실패) : ");
 		kill(getpid(), SIGINT);

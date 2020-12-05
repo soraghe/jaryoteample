@@ -1,7 +1,7 @@
 #ifndef __BANKDB_H__
 #define __BANKDB_H__
 
-#include "msq.h"
+#include "msq_server.h"
 #include <iostream>
 
 using namespace std;
