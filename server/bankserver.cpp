@@ -301,7 +301,7 @@ int main(int argc, char const* argv[]) {
 					case ADMODIFYCLINFO: {	//클라이언트 정보수정
 						cout << "ADMODIFYCLINFO : (from " << admin.adminId << ")  (client ID : " << admin.data.clientId << ")";
 						
-						/*//존재하는 고객인지 먼저 체크
+						//존재하는 고객인지 먼저 체크
 
 						if(is_our_client(admin.data.clientId) == false) {
 							admin.is_error = true;
@@ -311,8 +311,8 @@ int main(int argc, char const* argv[]) {
 								kill(getpid(), SIGUSR2);
 							}
 							cout << "  >>  거부" << endl;
-						}*/
-					//	else {//기존 고객이면
+						}
+						else {//기존 고객이면
 							ClientInfo* temp = (ClientInfo*)pull_client_info(admin.data.clientId);
 							if(strcmp(admin.data.clientPw, "\0") != 0)
 								strcpy(temp->clientPw, admin.data.clientPw);
@@ -329,7 +329,7 @@ int main(int argc, char const* argv[]) {
 								kill(getpid(), SIGUSR2);
 							}
 							cout << "  >>  수정완료" << endl;
-					//	}
+						}
 						break;
 					}
 					case ADSIGNUP: {			//관리자 등록
