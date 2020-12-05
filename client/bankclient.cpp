@@ -19,8 +19,6 @@ void signalHandler(int signum);
 
 int main(int argc, char const *argv[]) {
 
-	cout << "___________________테스트케이스____________________" << endl;
-
 	MsgClient client;
 
 	key_t msq_key = ftok("/", 31);
