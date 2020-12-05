@@ -203,13 +203,13 @@ bool is_our_admin(const char* ID) {
 	//파일의 끝까지 읽기
 	do {
 		memset(target, 0x00, sizeof(AdminInfo));//구조체 초기화
-		rsize = read(fd, (MsgAdmin *)target, sizeof(AdminInfo));
+		rsize = read(fd, (AdminInfo *)target, sizeof(AdminInfo));
 		if(rsize == -1) {
 			perror("read() error!(DB파일 읽기 실패) : ");
 			return false;
 		}
-		//인자로 들어온 ID/PW와 동일한 ID/PW를 가진 정보가 파일에 있으면
-		else if(rsize > 0 && strcmp(target->adminId, ID) == 0) {
+		//인자로 들어온 ID/PW와 동일한 ID를 가진 정보가 파일에 있으면
+		else if(strcmp(target->adminId, ID) == 0) {
 			close(fd);
 			return true;
 		}
