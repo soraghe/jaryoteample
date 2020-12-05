@@ -40,7 +40,6 @@ int main(int argc, char const *argv[]) {
 	while(1) {
 		//메시지 타입 구조체 초기화
 		memset(&client, 0x00, sizeof(MsgClient));
-
 		cout<< "\n----------BANK SERVICE----------\n 1. 로그인\n 2. 회원가입\n 9. 종료\n >> ";
 		int todo;
 		cin >> todo;
@@ -53,8 +52,8 @@ int main(int argc, char const *argv[]) {
 		switch(client.cmd) {
 			case CLSIGNIN: {//로그인
 				//ID/PW 입력
-				cout<<"ID : "; cin >> localInfo.clientId;
-				cout<<"PW : "; cin >> localInfo.clientPw;
+				cout << endl << " ID : "; cin >> localInfo.clientId;
+				cout << " PW : "; cin >> localInfo.clientPw;
 				cout.clear();cin.clear();
 
 				//client에 ID와 PW정보를 담아 메시지 송신
@@ -78,7 +77,7 @@ int main(int argc, char const *argv[]) {
 				else {
 					//메시지는 받았지만 로그인 실패
 					if(client.is_error == true) {
-						cout << "로그인 실패." << endl;
+						cout << "\n >> 로그인 실패." << endl;
 						memset(&client, 0x00, sizeof(MsgClient));//에러코드를 포함한 메시지타입 구조체 초기화
 						break;
 					}
@@ -89,18 +88,19 @@ int main(int argc, char const *argv[]) {
 						strcpy(localInfo.clientResRegNum, client.data.clientAccountNum);
 						localInfo.clientBalance = client.data.clientBalance;
 						
-						cout << localInfo.clientName << "님 안녕하세요." << endl;
+						cout << "\n >> \"" << localInfo.clientName << "\" 님 안녕하세요." << endl;
 					}
 				}
 				break;
 			}
 			case CLSIGNUP: {//회원가입
 				//회원가입정보 입력	
+				cout << endl << " <회원가입정보 입력>" << endl;
 				memset(&localInfo, 0x00, sizeof(ClientInfo));
-				cout<<"ID : "; cin >> localInfo.clientId;		//ID는 중복 금지(구현 필요)
-				cout<<"PW : "; cin >> localInfo.clientPw;		//PW는 중복 가능, 패스워드 확인 절차 추가 필요
-				cout<<"NAME : "; cin >> localInfo.clientName;	
-				cout<<"RESREGNUM : "; cin >> localInfo.clientResRegNum;
+				cout <<" 아이디(최대 19자) : "; cin >> localInfo.clientId;		//ID는 중복 금지(구현 필요)
+				cout <<" 패스워드(최대 19자) : "; cin >> localInfo.clientPw;		//PW는 중복 가능, 패스워드 확인 절차 추가 필요
+				cout <<" 이름을 입력하세요 : "; cin >> localInfo.clientName;	
+				cout <<" 주민번호 7자리를 입력해주세요(ex. 970101-2) : "; cin >> localInfo.clientResRegNum;
 
 				cout.clear();cin.clear();
 			
@@ -112,7 +112,6 @@ int main(int argc, char const *argv[]) {
 				strcpy(client.data.clientName, localInfo.clientName);
 				strcpy(client.data.clientResRegNum, localInfo.clientResRegNum);
 				client.cmd = 2;
-				//client.data.clientBalance = 0;
 				int sndSize = msgsnd(msq_client_id, &client, MSG_SIZE_CLIENT, 0);	//전송
 				//전송 실패 시
 				if(sndSize != 0){
@@ -129,11 +128,11 @@ int main(int argc, char const *argv[]) {
 				}
 				//메시지 수신 성공 시
 				if(client.is_error == true) {//회원가입 실패
-					cout << "회원가입 실패" << endl;
+					cout << endl << " >> 회원가입 실패" << endl;
 				} else {//회원가입 성공
-					cout << client.data.clientName << " 님의 회원가입이 완료되었습니다." << endl;
+					cout << endl << " >> "<< client.data.clientName << " 님의 회원가입이 완료되었습니다." << endl;
 					//서버에서 생성되는 계좌번호는 중복 금지(추후 이체기능을 위해)
-					cout << " - 생성된 계좌번호 : " << client.data.clientAccountNum;
+					cout << endl << "  - 생성된 계좌번호 : " << client.data.clientAccountNum << endl;
 				}														
 				//메시지타입 구조체 초기화(회원가입 != 로그인)
 				memset(&client, 0x00, sizeof(MsgClient));
@@ -141,12 +140,12 @@ int main(int argc, char const *argv[]) {
 				break;
 			}
 			case 9: {
-				cout << "안녕히 가십시오." <<endl;
+				cout << endl << " >> 프로그램을 종료합니다." << endl;
 				kill(getpid(), SIGINT);
 				break;
 			}
 			default:{	//예상치 못한 오류
-				cout << "잘못된 입력. 다시 입력하세요." << endl;
+				cout << "\n >> 잘못된 입력. 다시 입력하세요." << endl;
 				break;
 			}	
 		}
@@ -163,6 +162,7 @@ int main(int argc, char const *argv[]) {
 				//작업코드에 따라 구조체에 담을 정보의 조합이 달라짐
 				//3 : 입금
 				//4 : 출금
+				//6 : 로그아웃
 				switch(client.cmd){
 					case CLDEPOSIT: {//입금
 						//사용자의 계좌정보를 요청(동기화 목적으로)
@@ -182,10 +182,10 @@ int main(int argc, char const *argv[]) {
 						if(client.data.clientBalance != localInfo.clientBalance)
 							localInfo.clientBalance = client.data.clientBalance;
 						
-						cout << "계좌에 남아있는 금액 : " << (int)client.data.clientBalance << "원" << endl;
+						cout << endl <<" 계좌에 남아있는 금액 : " << (int)client.data.clientBalance << "원" << endl;
 						//사용자 입력
 						int deposit;//입금액
-						cout << "입금하실 금액 : "; cin >> deposit;
+						cout <<" 입금하실 금액 : "; cin >> deposit;
 						
 						//입금할 금액을 client.data.clientBalance에 담아 구조체 메시지 송신(localInfo는 변경 X)
 						client.mtype = MSG_TYPE_CLIENT;
@@ -203,7 +203,7 @@ int main(int argc, char const *argv[]) {
 							perror("msgrcv() error!(입금 - 갱신된 잔액조회 실패)");
 							break;
 						}
-						cout << "입금 후 잔액 : " << (int)client.data.clientBalance << "원" << endl;
+						cout << endl <<" >> 입금 후 잔액 : " << (int)client.data.clientBalance << "원" << endl;
 						localInfo.clientBalance = client.data.clientBalance;	//잔액을 localInfo와 동기화
 						break;
 					}	
@@ -228,13 +228,13 @@ int main(int argc, char const *argv[]) {
 						//잔액 정보가 다르면 서버 기준에 맞춰 최신화
 						if(client.data.clientBalance != localInfo.clientBalance)
 							localInfo.clientBalance = client.data.clientBalance;
-						cout << "계좌에 남아있는 금액 : " << (int)client.data.clientBalance << "원" << endl;
+						cout << endl << " 계좌에 남아있는 금액 : " << (int)client.data.clientBalance << "원" << endl;
 						//사용자 입력
 						int withdraw;//출금액
-						cout << "출금하실 금액 : "; cin >> withdraw;
+						cout << " 출금하실 금액 : "; cin >> withdraw;
 						//잔액 부족 시 작업 다시 선택
 						if(withdraw > client.data.clientBalance) {
-							cout << "잔액이 부족합니다." << endl;
+							cout << endl <<" >> 잔액이 부족합니다." << endl;
 							break;
 						} 
 
@@ -255,29 +255,35 @@ int main(int argc, char const *argv[]) {
 							perror("msgrcv() error!(출금 - 갱신된 잔액조회 실패)");
 							break;
 						}
-						cout << "출금 후 잔액 : " << (int)client.data.clientBalance << "원" << endl;
+						cout << endl <<" >> 출금 후 잔액 : " << (int)client.data.clientBalance << "원" << endl;
 						//최신화된 잔액 정보를 로컬에 저장
 						localInfo.clientBalance = client.data.clientBalance;
 						break;
 					}
 
+
 					case CLSIGNOUT: { 
-						cout << "로그아웃.\n" << endl;
-						//사용했던 로컬, 메시지타입 구조체들 초기화
-						memset(&localInfo, 0x00, sizeof(MsgClient));
-						memset(&localInfo, 0x00, sizeof(ClientInfo));
-						break;
+						cout << endl <<" >> 로그아웃을 합니다.";
+						break;	//일단 switch문을 이탈하고, switch문 뒤에서 기능 수행
 					}
 
-
 					default: {	//예상치 못한 오류
-						cout << "잘못된 입력. 다시 입력하세요." << endl;
+						cout << endl <<" >> 잘못된 입력. 다시 입력하세요." << endl;
 						break;
 					}	
 				}	
-				cout.clear();cout << endl;
-			}		
+				cout.clear();
+
+				//로그아웃 선택했을 시
+				if (client.cmd == CLSIGNOUT) {
+					//사용했던 로컬, 메시지타입 구조체들 초기화하고 상위 선택메뉴로 이탈
+					memset(&localInfo, 0x00, sizeof(MsgClient));
+					memset(&localInfo, 0x00, sizeof(ClientInfo));
+					break;
+				}
+			}
 		}
+		cout << endl;
 	}
 	//테스트케이스 종료
 	return 0;
