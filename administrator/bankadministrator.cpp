@@ -152,6 +152,7 @@ int main(int argc, char const *argv[]) {
 									      cout << "고객 주민등록 번호 : " << admin.data.clientResRegNum << endl;	
 									      cout << "고객 계좌번호 : " << admin.data.clientAccountNum << endl;	
 									      cout << "고객 계좌 잔액 : " <<admin.data.clientBalance << endl << endl;	           
+								      	      memset(&admin , 0x00 , siezof(MsgAdmin));
 								      }
 							      }
 
@@ -174,9 +175,6 @@ int main(int argc, char const *argv[]) {
 							      cout << "\n--- 클라이언트 정보 수정 ---" << endl;
 							      cout << "수정할 고객의 ID  입력\n>>> ";
 							      cin >> admin_data_id;
-
-							      //>>여기에 잘못된 ID입력에 대한 처리를 해주세요(server/bankserver.cpp 참고)
-
 
 							      cout << "수정할 고객의 데이터 선택\n1.비밀번호\n2.고객 이름\n3.고객 계좌번호\n>>> ";
 							      cin >> num;
