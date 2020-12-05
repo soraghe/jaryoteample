@@ -1,4 +1,4 @@
-#include "msq.h"
+#include "msq_admin.h"
 #include <signal.h>
 #include <iostream>
 #include <cstdlib>
@@ -15,7 +15,7 @@ void signalHandler(int signum);
 int main(int argc, char const *argv[]) {
 
 	MsgAdmin admin;
-	key_t msq_key = ftok(".", 31);
+	key_t msq_key = ftok("/", 31);
 	if(msq_key == -1){
 		perror("ftok() error!(ipc 키생성 실패) : ");
 		kill(getpid(), SIGINT);
